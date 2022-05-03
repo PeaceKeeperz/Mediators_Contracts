@@ -33,18 +33,27 @@ contract Mediation is VRFConsumerBaseV2 {
         string tokenURI;
         bool caseClosed;
         uint256 caseCreatedAt;
-
+        uint256 numberOfSession;
     }
     uint256 nextCaseId;
+    uint256 constant numberOfSessions = 3;
 
-    uint256 juniorMediatorPrice = 0.1 ether;
-    uint256 intermediateMediatorPrice = 0.2 ether;
-    uint256 expertMediatorPrice = 0.3 ether;
+
+    /*
+    * WE MAY NEED CHAINLINK DATA FEED TO GET THE CURRENT PRICE OF ETH AND KNOW WHAT TO PRICE USERS
+    */
+    uint256 juniorMediatorPrice = 0.0001 ether;
+    uint256 intermediateMediatorPrice = 0.0002 ether;
+    uint256 expertMediatorPrice = 0.0003 ether;
 
     //This container keep tracks of the amount eth for each case
     mapping(uint256 => uint256) private ethBalances;
     mapping(uint256 => Case) public cases;
-    mapping(uint256 => bool) public caseExist;
+    mapping(uint256 => bool) public sessionStarted;
+    mapping(uint256 => bool) public paymentAccepted;
+
+    uint256 private acceptedByFirstParty;
+    uint256 private acceptedBySecondparty;
 
     enum Category {
         junior,
@@ -61,8 +70,11 @@ contract Mediation is VRFConsumerBaseV2 {
 
 
     error Mediation__PartyDoesNotExist();
-    error Mediation__CaseDoesNotExist();
+    error Mediation__CaseDoesNotExistOrCaseIsClosed();
     error Mediation__OnlyMediatorCanDoThis();
+    error Mediation__SessionAlredyStarted();
+    error Mediation__ExceededDefaultNumberOfSessions();
+    error Mediation__CannotReceivePaymentPartiesNeedToApprove();
     error Mediation__FailedToCancelCase();
     error Mediation__FailedToPostponedCase();
 
@@ -85,7 +97,8 @@ contract Mediation is VRFConsumerBaseV2 {
             ,
             ,
             false,
-            block.timestamp
+            block.timestamp,
+            0
         );
 
         _assignMediator(category, nextCaseId);
@@ -115,8 +128,8 @@ contract Mediation is VRFConsumerBaseV2 {
         if(_party != 1 || _party != 2) {
             revert Mediation__PartyDoesNotExist();
         }
-        if(!caseExist[_caseId]){
-            revert Mediation__CaseDoesNotExist();
+        if(cases[_caseId].caseClosed){
+            revert Mediation__CaseDoesNotExistOrCaseIsClosed();
         }
 
         if(_party == 1) {
@@ -129,16 +142,56 @@ contract Mediation is VRFConsumerBaseV2 {
         emit case_JoinedCase(_caseId, _party, msg.sender);
     }
 
-    function cancelCase(_caseId) external onlyMediator {
+    //we should have a message feedback on the front end for parties to rate and comment on mediator, providing their addresses.
+    // we should be able to remove a mediator from the mediator contract
+
+    function startSession(_caseId) external onlyMediator(_caseId) {
+        if(sessionStarted[_caseId]) {
+            revert Mediation__SessionAlredyStarted();
+        }
+        if(cases[_caseId].caseClosed) {
+            revert Mediation__CaseDoesNotExistOrCaseIsClosed();
+        }
+        if(cases[_caseId].numberOfSession > numberOfSessions) {
+            revert Mediation__ExceededDefaultNumberOfSessions()
+        }
+        sessionStarted[_caseId] = true;
+        cases[_caseId].numberOfSession += 1;
+    }
+
+    function acceptPayment(uint256 _caseId) external {
+        if(cases[_caseId].firstParty[msg.sender] >= 0) {
+            acceptedByFirstParty = 1;
+        }
+
+        if(cases[_caseId].secondParty[msg.sender] >= 0){
+            acceptedBySecondparty = 1;
+        }
+
+        if((acceptedByFirstParty + acceptedBySecondparty) == 2){
+            paymentAccepted[_caseId] = true;
+        }else{
+            paymentAccepted[_caseId] = false;
+        }
+    }
+
+    function endSession(_caseId) external onlyMediator(_caseId) {
+        if(!paymentAccepted[_caseId]){
+            revert Mediation__CannotReceivePaymentPartiesNeedToApprove();
+        }
+        //complete this section
+    }
+
+    function cancelCase(_caseId) external onlyMediator(_caseId) {
 
     }
 
-    function closeCase(_caseId) external onlyMediator {
+    function closeCase(_caseId) external onlyMediator(_caseId) {
 
     }
 
-    function postponeCase(_caseId) external onlyMediator {
-        
+    function postponeCase(_caseId) external onlyMediator(_caseId) {
+
     }
 
     //Get random word.
@@ -162,19 +215,19 @@ contract Mediation is VRFConsumerBaseV2 {
 
     modifier payByCategory(uint256 category) {
         if(category == Category.junior) {
-            require(msg.value == juniorMediatorPrice, "Not enough or too much eth to create a case");
+            require(msg.value == juniorMediatorPrice*numberOfSessions, "Not enough or too much eth to create a case");
         }
         else if(category == Category.intermediate){
-            require(msg.value == intermediateMediatorPrice, "Not enough or too much eth to create a case");
+            require(msg.value == intermediateMediatorPrice*numberOfSessions, "Not enough or too much eth to create a case");
         }
         else if(category == Category.expert) {
-            require(msg.value == expertMediatorPrice, "Not enough or too much eth to create a case");
+            require(msg.value == expertMediatorPrice*numberOfSessions, "Not enough or too much eth to create a case");
         }
         _;
     }
 
-    modifier onlyMediator {
-        if(msg.sender != mediator) {
+    modifier onlyMediator(uint256 _caseId) {
+        if(msg.sender != cases[_caseId].mediator) {
             revert Mediation__OnlyMediatorCanDoThis();
         }
     }
