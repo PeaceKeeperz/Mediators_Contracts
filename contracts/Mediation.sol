@@ -96,10 +96,12 @@ contract Mediation is VRFConsumerBaseV2 {
             ,
             ,
             ,
-            false,
+            true,
             block.timestamp,
             0
         );
+
+        _requestRandomWords();
 
         _assignMediator(category, nextCaseId);
 
@@ -120,6 +122,7 @@ contract Mediation is VRFConsumerBaseV2 {
     function joinCaseAsSecondParty(uint256 _caseId) external payable payByCategory(category){
         ethBalances[_caseId] += msg.value;
         cases[_caseId].secondParty.push(msg.sender);
+        cases[_caseId].caseClosed = false;
 
         emit case_SecondPartyJoint(_caseId);
     }
