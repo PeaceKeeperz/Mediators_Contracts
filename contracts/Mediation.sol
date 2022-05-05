@@ -6,6 +6,11 @@ import "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+
+/*
+*This will be removed and the contract will inherit the mediator.sol
+*We can still use the interface method if we want to deploy more than one contract
+*/
 interface IMediator {
     function getMediators(uint256 _category) external returns(address[] memory);
 }
