@@ -14,13 +14,16 @@ contract Keepers {
 
     /* ============ State Variables ============ */
 
-    uint256 public nextMediator;
+    uint256 public nextMediatorId;
     address public controller;
+    address public mediationContract;
 
     mapping(uint256 => _Mediator) public mediators;
     mapping(uint256 => bool) public isAvailable; // is the mediator available?
+    mapping(uint256 => bool) public isActive;
     event Mediator(
         uint256 id,
+        uint256 openCaseCount,
         address owner,
         string timeZone,
         string[] Languages,
@@ -34,6 +37,7 @@ contract Keepers {
     struct _Mediator {
         uint256 id;
         address owner;
+        uint256 openCaseCount;
         string timeZone;
         string[] Languages;
         string[] certifications;
@@ -47,8 +51,9 @@ contract Keepers {
      * @notice Set controller state variable
      * @param _controller   Address of pontental controller of this contract. For onlyOwner
      */
-    constructor(address _controller) {
+    constructor(address _controller, address _mediationContract) {
         controller = _controller;
+        mediationContract = _mediationContract;
     }
 
     /**
@@ -69,21 +74,23 @@ contract Keepers {
     ) public onlyOwner {
         //onlyOwner implementation from another contract.
         //require controller contract to be msg.sender.
-        nextMediator = nextMediator.add(1);
-        mediators[nextMediator] = _Mediator(
-            nextMediator,
+        nextMediatorId = nextMediatorId.add(1);
+        mediators[nextMediatorId] = _Mediator(
+            nextMediatorId,
             _owner,
+            0,
             _timeZone,
             _languages,
             _certifications,
             _daoExperience,
             block.timestamp
         );
-
-        isAvailable[nextMediator] = true;
+        isAvailable[nextMediatorId] = true;
+        isActive[nextMediatorId] = true;
         //mint mediator NFT badge? send
         emit Mediator(
-            nextMediator,
+            nextMediatorId,
+            0,
             _owner,
             _timeZone,
             _languages,
@@ -91,6 +98,17 @@ contract Keepers {
             _daoExperience,
             block.timestamp
         );
+    }
+
+    function addCaseCount(uint _id) external onlyMediationContract {
+        _Mediator storage mediator = mediators[_id];
+        mediator.openCaseCount =  mediator.openCaseCount.add(1);
+    }
+
+    function minusCaseCount(uint _id) external onlyMediationContract {
+        _Mediator storage mediator = mediators[_id];
+        require(mediator.openCaseCount > 0, "Mediator has no open cases");
+       mediator.openCaseCount =  mediator.openCaseCount.sub(1);
     }
 
     /**
@@ -103,6 +121,12 @@ contract Keepers {
             msg.sender == controller,
             "You do not have permission to call this contract"
         );
+        _;
+    }
+
+    modifier onlyMediationContract() {
+        require(msg.sender == mediationContract,
+        "Only Mediation Contract can call this.");
         _;
     }
 }
