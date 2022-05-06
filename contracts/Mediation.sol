@@ -148,6 +148,11 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
         nextCaseId++;
     }
 
+    function companyCreateCase(uint256 _category, address payable _firstParty, address payable _secondPary) 
+        external payable payFullFeeByCategory(_category, numberOfSessions){
+            
+    }
+
     /*
     * This calls the mediator contracts and get a random winner
     * The selected mediator is then added to the case
