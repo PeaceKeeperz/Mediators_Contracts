@@ -16,9 +16,9 @@ contract Mediators {
 
     uint256 public nextMediatorId;
     address public controller;
-    address public mediationContract;
 
     mapping(uint256 => _Mediator) public mediators;
+    mapping(uint256 => address[]) private mediatorsByCategory;
     mapping(uint256 => bool) public isAvailable; // is the mediator available?
     mapping(uint256 => bool) public isActive;
     event Mediator(
@@ -29,7 +29,8 @@ contract Mediators {
         string[] Languages,
         string[] certifications,
         bool daoExperience,
-        uint256 timestamp
+        uint256 timestamp,
+        uint256 category
     );
 
     /* ============ Struct ============ */
@@ -43,17 +44,13 @@ contract Mediators {
         string[] certifications;
         bool daoExperience;
         uint256 timestamp;
+        uint256 category;
     }
 
     /* ============ Constructor ============ */
 
-    /**
-     * @notice Set controller state variable
-     * @param _controller   Address of pontental controller of this contract. For onlyOwner
-     */
-    constructor(address _controller, address _mediationContract) {
-        controller = _controller;
-        mediationContract = _mediationContract;
+    constructor() {
+        controller = msg.sender;
     }
 
     /**
@@ -64,13 +61,15 @@ contract Mediators {
      * @param _languages langugages they speak?
      * @param _certifications any certifications?
      * @param _daoExperience any dao eperience?
+     * @param _category The category of the mediator
      */
     function createMediator(
         address _owner,
         string memory _timeZone,
         string[] memory _languages,
         string[] memory _certifications,
-        bool _daoExperience
+        bool _daoExperience,
+        uint256 _category
     ) public onlyOwner {
         //onlyOwner implementation from another contract.
         //require controller contract to be msg.sender.
@@ -83,10 +82,12 @@ contract Mediators {
             _languages,
             _certifications,
             _daoExperience,
-            block.timestamp
+            block.timestamp,
+            _category
         );
         isAvailable[nextMediatorId] = true;
         isActive[nextMediatorId] = true;
+        _updateMediatorByCategory(_category, mediators[nextMediatorId]);
         //mint mediator NFT badge? send
         emit Mediator(
             nextMediatorId,
@@ -96,19 +97,28 @@ contract Mediators {
             _languages,
             _certifications,
             _daoExperience,
-            block.timestamp
+            block.timestamp,
+            _category
         );
     }
 
-    function addCaseCount(uint _id) external onlyMediationContract {
+    function addCaseCount(uint _id) external {
         _Mediator storage mediator = mediators[_id];
         mediator.openCaseCount =  mediator.openCaseCount.add(1);
     }
 
-    function minusCaseCount(uint _id) external onlyMediationContract {
+    function minusCaseCount(uint _id) external {
         _Mediator storage mediator = mediators[_id];
         require(mediator.openCaseCount > 0, "Mediator has no open cases");
        mediator.openCaseCount =  mediator.openCaseCount.sub(1);
+    }
+
+    function _updateMediatorByCategory(uint256 _category, _Mediator memory mediator) private onlyOwner {
+        mediatorsByCategory[_category].push(mediator.owner);
+    }
+
+    function getAllMediatorsByCategory(uint256 _category) external view returns(address[] memory) {
+        return mediatorsByCategory[_category];
     }
 
     /**
@@ -121,12 +131,6 @@ contract Mediators {
             msg.sender == controller,
             "You do not have permission to call this contract"
         );
-        _;
-    }
-
-    modifier onlyMediationContract() {
-        require(msg.sender == mediationContract,
-        "Only Mediation Contract can call this.");
         _;
     }
 }

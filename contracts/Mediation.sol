@@ -12,7 +12,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 *We can still use the interface method if we want to deploy more than one contract
 */
 interface IMediator {
-    function getMediators(uint256 _category) external returns(address[] memory);
+    function getAllMediatorsByCategory(uint256 _category) external view returns(address[] memory);
+    function minusCaseCount(uint _id) external;
+    function addCaseCount(uint _id) external;
 }
 
 contract Mediation is VRFConsumerBaseV2, Ownable {
@@ -21,7 +23,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
     //Rinkeby coordinator, These test values are coming from https://docs.chain.link/docs/vrf-contracts/#configurations
     address constant c_vrfCoordinator = 0x6168499c0cFfCaCD319c818142124B7A15E857ab;
     //subscription id, gotten from when you subscribe for LINK
-    uint64 immutable i_subscriptionId;
+    uint64 immutable i_subscriptionId;  //Subscription ID 4079
     bytes32 constant c_keyHash = 0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc;
     uint32 constant c_callbackGasLimit = 100000;
     uint16 constant c_requestConfirmations = 3;
@@ -80,6 +82,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
 
     mapping(uint256 => uint256) private acceptedByFirstParty; //The number of party one members who accepted to pay for a particular case session
     mapping(uint256 => uint256) private acceptedBySecondparty; //The number of party two members who accepted to pay for a particular case session
+    mapping(uint256 => bool) private doesCaseExist;
 
     enum Category {
         junior,
@@ -121,8 +124,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
     }
 
     //discuss, if two uses are calling this function at the same time, what will happened with the Id
-
-
+    
     /*
     * One of the parties involved will create a case specifying the category of the case
     * From the category, we will be able to get a mediator 
@@ -130,6 +132,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
     */
     function createCase(uint256 _category) external payable payByCategory(_category, numberOfSessions){
         ethBalances[nextCaseId] += msg.value;
+        nextCaseId++;
         
         cases[nextCaseId] = Case({
             caseId: nextCaseId,
@@ -144,13 +147,34 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
             category: _category
         });
 
+        doesCaseExist[nextCaseId] = true;
         emit case_Created(nextCaseId, cases[nextCaseId].caseCreatedAt);
-        nextCaseId++;
     }
 
-    function companyCreateCase(uint256 _category, address payable _firstParty, address payable _secondPary) 
+    /*
+    * Company starts a case and pay for the two parties, 
+    * They then assign a mediator and he starts the sessions
+    */
+    function companyCreateCase(uint256 _category, address payable _firstParty, address payable _secondParty) 
         external payable payFullFeeByCategory(_category, numberOfSessions){
+            ethBalances[nextCaseId] += msg.value;
+            nextCaseId++;
             
+            cases[nextCaseId] = Case({
+                caseId: nextCaseId,
+                firstParty: _firstParty,
+                secondParty: _secondParty,
+                mediator: payable(address(0)),
+                tokenURI: "tokenuri",
+                caseClosed: false,
+                caseCreatedAt: block.timestamp,
+                numberOfSession: 0,
+                sessionStarted: false,
+                category: _category
+            });
+
+            doesCaseExist[nextCaseId] = true;
+            emit case_Created(nextCaseId, cases[nextCaseId].caseCreatedAt);
     }
 
     /*
@@ -159,7 +183,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
     */
     function assignMediator(uint _category, uint256 _caseId) external {
         _requestRandomWords();
-        address[] memory mediators = i_Mediator.getMediators(_category);
+        address[] memory mediators = i_Mediator.getAllMediatorsByCategory(_category);
         uint256 selectedMediatorIndex = s_randomWords[0] % mediators.length;
         address selectedMediator = mediators[selectedMediatorIndex];
         cases[_caseId].mediator = payable(selectedMediator);
@@ -170,6 +194,9 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
     * When joining, he has to specify the case that he is joining and pay the fee accordingly
     */
     function joinCaseAsSecondParty(uint256 _caseId) external payable payByCategory(cases[_caseId].category, numberOfSessions){
+        if(!doesCaseExist[_caseId]) {
+            revert Mediation__CaseDoesNotExistOrCaseIsClosed();
+        }
         ethBalances[_caseId] += msg.value;
         cases[_caseId].secondParty = payable(msg.sender);
         cases[_caseId].caseClosed = false;
@@ -182,7 +209,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
     * When joining the case, they specify the case id and the party that they are joining
     */
     function joinCase(uint256 _caseId, uint256 _party) external {
-        if(_party != 1 || _party != 2) {
+        if(_party != 1 && _party != 2) {
             revert Mediation__PartyDoesNotExist();
         }
         if(cases[_caseId].caseClosed){
@@ -198,6 +225,14 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
 
         emit case_JoinedCase(_caseId, _party, msg.sender);
     }
+
+    function getFirstPartyMembers(uint256 _caseId) external view returns(address[] memory) {
+        return firstPartyMembers[_caseId];
+    } 
+
+    function getSecondPartyMembers(uint256 _caseId) external view returns(address[] memory) {
+        return secondPartyMembers[_caseId];
+    } 
 
     //we should have a message feedback on the front end for parties to rate and comment on mediator, providing their addresses.
     // we should be able to remove a mediator from the mediator contract
@@ -370,6 +405,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
         }
 
         cases[_caseId].caseClosed = true;
+        doesCaseExist[_caseId] = false;
     }
 
     function postponeCase(uint256 _caseId) external onlyMediator(_caseId) {
@@ -468,6 +504,19 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
         }
         else if(category == uint256(Category.expert)) {
             require(msg.value == (expertMediatorPrice/2)*_numberOfSessions, "Not enough or too much eth to create a case");
+        }
+        _;
+    }
+
+    modifier payFullFeeByCategory(uint256 category, uint256 _numberOfSessions) {
+        if(category == uint256(Category.junior)) {
+            require(msg.value == juniorMediatorPrice*_numberOfSessions, "Not enough or too much eth to create a case");
+        }
+        else if(category == uint256(Category.intermediate)){
+            require(msg.value == intermediateMediatorPrice*_numberOfSessions, "Not enough or too much eth to create a case");
+        }
+        else if(category == uint256(Category.expert)) {
+            require(msg.value == expertMediatorPrice*_numberOfSessions, "Not enough or too much eth to create a case");
         }
         _;
     }
