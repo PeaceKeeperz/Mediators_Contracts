@@ -13,8 +13,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 */
 interface IMediator {
     function getAllMediatorsByCategory(uint256 _category) external view returns(address[] memory);
-    function minusCaseCount(uint _id) external;
-    function addCaseCount(uint _id) external;
+    function minusCaseCount(uint _id) external returns(bool);
+    function addCaseCount(uint _id) external returns(bool);
 }
 
 contract Mediation is VRFConsumerBaseV2, Ownable {
@@ -43,7 +43,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
         bool sessionStarted;
         uint256 category;
     }
-    uint256 nextCaseId;
+    uint256 public nextCaseId;
 
     /*
     *  Number of default sessions that users have to pay upfront when creating a case,
@@ -185,6 +185,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
         _requestRandomWords();
         address[] memory mediators = i_Mediator.getAllMediatorsByCategory(_category);
         uint256 selectedMediatorIndex = s_randomWords[0] % mediators.length;
+        require(i_Mediator.addCaseCount(selectedMediatorIndex), "error updating caseCount");
         address selectedMediator = mediators[selectedMediatorIndex];
         cases[_caseId].mediator = payable(selectedMediator);
     }
