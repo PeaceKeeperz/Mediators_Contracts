@@ -220,7 +220,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
         require(i_Mediator.addCaseCount(selectedMediatorIndex), "error updating caseCount");
         address selectedMediator = mediators[selectedMediatorIndex];
         cases[_caseId].mediator = payable(selectedMediator);
-        emit AssignMediator(_caseId, selectedMediator)
+        emit AssignMediator(_caseId, selectedMediator);
     }
 
     /*
