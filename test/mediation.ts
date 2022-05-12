@@ -99,10 +99,20 @@ describe("Integration Test for Mediator and Mediation contracts", () => {
       expect(SecondMembers.length).to.equal(2);
     });
 
-    it("Should not join a none existing part", async () => {
+    it("Should not join a none existing party", async () => {
       await expect(mediation.joinCase(1, 3)).to.revertedWith(
         "Mediation__PartyDoesNotExist()"
       );
+    });
+
+    it("Should create case for the two parties", async () => {
+      await mediation
+        .connect(accounts[9])
+        .companyCreateCase(1, accounts[1].address, accounts[2].address, {
+          value: ethers.utils.parseEther("0.006"),
+        });
+      const _case = await mediation.cases(2);
+      await expect(_case.caseClosed).is.equal(false);
     });
   });
 });

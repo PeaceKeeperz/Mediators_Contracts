@@ -123,7 +123,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
         i_Mediator = IMediator(_mediator);
     }
 
-    //discuss, if two uses are calling this function at the same time, what will happened with the Id
+    //discuss, if two users are calling this function at the same time, what will happened with the Id
     
     /*
     * One of the parties involved will create a case specifying the category of the case
@@ -406,14 +406,6 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
 
         cases[_caseId].caseClosed = true;
         doesCaseExist[_caseId] = false;
-    }
-
-    function postponeCase(uint256 _caseId) external onlyMediator(_caseId) {
-
-    }
-
-    function cancelCase(uint256 _caseId) external onlyMediator(_caseId) {
-
     }
 
     /*
