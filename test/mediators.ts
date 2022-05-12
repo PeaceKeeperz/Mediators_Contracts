@@ -1,3 +1,5 @@
+/* eslint-disable spaced-comment */
+/* eslint-disable prettier/prettier */
 import { ethers, run } from "hardhat";
 import { Contract, ContractFactory, BigNumber } from "ethers";
 import { expect, assert } from "chai";
@@ -37,7 +39,7 @@ describe("Mediators Contract", () => {
 
     describe("createMediator unit tests", () => {
       it("Should create a Mediator Struct", async () => {
-        let owner: SignerWithAddress = accounts[0];
+        const owner: SignerWithAddress = accounts[0];
         const timezone: string = "PST";
         const languages: string = "English";
         const certification: string = "Some Cert";
@@ -97,7 +99,7 @@ describe("Mediators Contract", () => {
       });
 
       it("Should emit correct Mediator Event", async () => {
-        let owner: SignerWithAddress = accounts[0];
+        const owner: SignerWithAddress = accounts[0];
         const timezone: string = "PST";
         const languages: string = "English";
         const certification: string = "Some Cert";
@@ -133,7 +135,7 @@ describe("Mediators Contract", () => {
       });
 
       it("Should set isAvailable to true", async () => {
-        let owner: SignerWithAddress = accounts[0];
+        const owner: SignerWithAddress = accounts[0];
         const timezone: string = "PST";
         const languages: string = "English";
         const certification: string = "Some Cert";
@@ -156,7 +158,7 @@ describe("Mediators Contract", () => {
       });
 
       it("Should set isActive to true", async () => {
-        let owner: SignerWithAddress = accounts[0];
+        const owner: SignerWithAddress = accounts[0];
         const timezone: string = "PST";
         const languages: string = "English";
         const certification: string = "Some Cert";
@@ -174,12 +176,12 @@ describe("Mediators Contract", () => {
             category
           );
 
-        let isAvailable: boolean = await mediators.isActive(1);
+        const isAvailable: boolean = await mediators.isActive(1);
         assert.equal(isAvailable, true, "isActive should be true");
       });
 
       it("Should update nextMediatorId", async () => {
-        let owner: SignerWithAddress = accounts[0];
+        const owner: SignerWithAddress = accounts[0];
         const timezone: string = "PST";
         const languages: string = "English";
         const certification: string = "Some Cert";
@@ -202,7 +204,7 @@ describe("Mediators Contract", () => {
       });
 
       it("Should updateMediatorByCategory", async () => {
-        let owner: SignerWithAddress = accounts[0];
+        const owner: SignerWithAddress = accounts[0];
         const timezone: string = "PST";
         const languages: string = "English";
         const certification: string = "Some Cert";
@@ -227,7 +229,7 @@ describe("Mediators Contract", () => {
       });
 
       it("Should revert when createMediator is called by nonOwner", async () => {
-        let account1: SignerWithAddress = accounts[1];
+        const account1: SignerWithAddress = accounts[1];
         const timezone: string = "PST";
         const languages: string = "English";
         const certification: string = "Some Cert";
@@ -267,9 +269,8 @@ describe("Mediators Contract", () => {
         value: ethers.utils.parseEther("0.0015"),
       });
 
-
-     // creates a new mediator   
-      let owner: SignerWithAddress = accounts[0];
+      // creates a new mediator
+      const owner: SignerWithAddress = accounts[0];
       const mediatorAddress: string =
         "0x1230000000000000000000000000000000000000";
       const timezone: string = "PST";
