@@ -29,8 +29,8 @@ describe("Integration Test for Mediator and Mediation contracts", () => {
 
   describe("Mediator unit test", () => {
     it("Should create a new mediator", async () => {
-      const lan = ["en"];
-      const cert = ["Masters"];
+      const lan = "en";
+      const cert = "Masters";
       await mediator
         .connect(accounts[0])
         .createMediator(accounts[1].address, "GMT + 1", lan, cert, true, 0);
@@ -38,8 +38,8 @@ describe("Integration Test for Mediator and Mediation contracts", () => {
     });
 
     it("should get mediators by category", async () => {
-      const lan = ["en"];
-      const cert = ["Masters"];
+      const lan = "en";
+      const cert = "Masters";
       await mediator
         .connect(accounts[0])
         .createMediator(accounts[2].address, "GMT + 1", lan, cert, true, 0);

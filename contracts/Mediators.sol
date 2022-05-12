@@ -15,7 +15,8 @@ contract Mediators {
     /* ============ State Variables ============ */
 
     uint256 public nextMediatorId;
-    address public controller;
+    address public owner;
+    address public mediationContract;
 
     mapping(uint256 => _Mediator) public mediators;
     mapping(uint256 => address[]) private mediatorsByCategory;
@@ -23,11 +24,11 @@ contract Mediators {
     mapping(uint256 => bool) public isActive;
     event Mediator(
         uint256 id,
-        uint256 openCaseCount,
         address owner,
+        uint256 openCaseCount,
         string timeZone,
-        string[] Languages,
-        string[] certifications,
+        string language,
+        string certification,
         bool daoExperience,
         uint256 timestamp,
         uint256 category
@@ -40,8 +41,8 @@ contract Mediators {
         address owner;
         uint256 openCaseCount;
         string timeZone;
-        string[] Languages;
-        string[] certifications;
+        string Languages;
+        string certifications;
         bool daoExperience;
         uint256 timestamp;
         uint256 category;
@@ -50,7 +51,7 @@ contract Mediators {
     /* ============ Constructor ============ */
 
     constructor() {
-        controller = msg.sender;
+        owner = msg.sender;
     }
 
     /**
@@ -66,8 +67,8 @@ contract Mediators {
     function createMediator(
         address _owner,
         string memory _timeZone,
-        string[] memory _languages,
-        string[] memory _certifications,
+        string memory _languages,
+        string memory _certifications,
         bool _daoExperience,
         uint256 _category
     ) public onlyOwner {
@@ -91,8 +92,8 @@ contract Mediators {
         //mint mediator NFT badge? send
         emit Mediator(
             nextMediatorId,
-            0,
             _owner,
+            0,
             _timeZone,
             _languages,
             _certifications,
@@ -102,23 +103,36 @@ contract Mediators {
         );
     }
 
-    function addCaseCount(uint _id) external {
+    function addCaseCount(uint256 _id) external returns (bool) {
         _Mediator storage mediator = mediators[_id];
-        mediator.openCaseCount =  mediator.openCaseCount.add(1);
+        mediator.openCaseCount = mediator.openCaseCount.add(1);
+        return true;
     }
 
-    function minusCaseCount(uint _id) external {
+    function minusCaseCount(uint256 _id) external returns (bool) {
         _Mediator storage mediator = mediators[_id];
         require(mediator.openCaseCount > 0, "Mediator has no open cases");
-       mediator.openCaseCount =  mediator.openCaseCount.sub(1);
+        mediator.openCaseCount = mediator.openCaseCount.sub(1);
+        return true;
     }
 
-    function _updateMediatorByCategory(uint256 _category, _Mediator memory mediator) private onlyOwner {
+    function _updateMediatorByCategory(
+        uint256 _category,
+        _Mediator memory mediator
+    ) private onlyOwner {
         mediatorsByCategory[_category].push(mediator.owner);
     }
 
-    function getAllMediatorsByCategory(uint256 _category) external view returns(address[] memory) {
+    function getAllMediatorsByCategory(uint256 _category)
+        external
+        view
+        returns (address[] memory)
+    {
         return mediatorsByCategory[_category];
+    }
+
+    function setMediationContract(address _mediationContract) public onlyOwner {
+        mediationContract = _mediationContract;
     }
 
     /**
@@ -128,9 +142,15 @@ contract Mediators {
      **/
     modifier onlyOwner() {
         require(
-            msg.sender == controller,
+            msg.sender == owner,
             "You do not have permission to call this contract"
         );
+        _;
+    }
+
+    // used so only the mediation contract calls this. 
+    modifier onlyMediation() {
+        require(msg.sender == mediationContract, "Not the mediation contract.");
         _;
     }
 }
