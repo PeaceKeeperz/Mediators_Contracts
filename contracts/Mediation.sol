@@ -196,7 +196,17 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
             });
 
             doesCaseExist[nextCaseId] = true;
-            emit case_Created(nextCaseId, cases[nextCaseId].caseCreatedAt);
+            emit case_Created(
+            nextCaseId,
+            cases[nextCaseId].firstParty,
+            cases[nextCaseId].secondParty,
+            cases[nextCaseId].mediator,
+            cases[nextCaseId].tokenURI,
+            cases[nextCaseId].caseClosed,
+            cases[nextCaseId].caseCreatedAt,
+            cases[nextCaseId].numberOfSession,
+            cases[nextCaseId].sessionStarted,
+            cases[nextCaseId].category);
     }
 
     /*
