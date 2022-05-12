@@ -25,7 +25,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
     //subscription id, gotten from when you subscribe for LINK
     uint64 immutable i_subscriptionId;  //Subscription ID 4079
     bytes32 constant c_keyHash = 0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc;
-    uint32 constant c_callbackGasLimit = 100000;
+    uint32 constant c_callbackGasLimit = 100000;    
     uint16 constant c_requestConfirmations = 3;
     uint32 constant c_numWords =  1;
     uint256[] public s_randomWords;
@@ -92,12 +92,24 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
 
 
     //Events
-    event case_Created(uint256 _caseId, uint256 _caseCreatedAt);
+    event case_Created(
+        uint256 _caseId, 
+        address firstParty,
+        address secondParty,
+        address mediator,
+        string tokenUri,
+        bool caseClosed,
+        uint256 caseCreatedAt,
+        uint256 numberOfSession,
+        bool sessionStarted,
+        uint256 category);
+
     event case_SecondPartyJoint(uint256 _caseId);
     event case_Completed(uint256 _caseId, address[] _winner);
     event case_JoinedCase(uint256 _caseId, uint256 _party, address _address);
     event BookedSessionCreated(uint256 _caseId);
     event JoinedBookedSession(uint256 _caseId);
+    event AssignMediator(uint256 _caseId, address _mediator);
 
 
     //Custom errors
@@ -148,7 +160,17 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
         });
 
         doesCaseExist[nextCaseId] = true;
-        emit case_Created(nextCaseId, cases[nextCaseId].caseCreatedAt);
+
+        emit case_Created(nextCaseId,
+        cases[nextCaseId].firstParty,
+        cases[nextCaseId].secondParty,
+        cases[nextCaseId].mediator,
+        cases[nextCaseId].tokenURI,
+        cases[nextCaseId].caseClosed,
+        cases[nextCaseId].caseCreatedAt,
+        cases[nextCaseId].numberOfSession,
+        cases[nextCaseId].sessionStarted,
+        cases[nextCaseId].category);
     }
 
     /*
@@ -188,6 +210,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
         require(i_Mediator.addCaseCount(selectedMediatorIndex), "error updating caseCount");
         address selectedMediator = mediators[selectedMediatorIndex];
         cases[_caseId].mediator = payable(selectedMediator);
+        emit AssignMediator(_caseId, selectedMediator)
     }
 
     /*
