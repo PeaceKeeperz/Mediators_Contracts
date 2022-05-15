@@ -17,6 +17,7 @@ contract Mediators {
     uint256 public nextMediatorId;
     address public owner;
     address public mediationContract;
+    address public cMediationContract;
 
     mapping(uint256 => _Mediator) public mediators;
     mapping(uint256 => address[]) private mediatorsByCategory;
@@ -33,6 +34,7 @@ contract Mediators {
         uint256 timestamp,
         uint256 category
     );
+
 
     /* ============ Struct ============ */
 
@@ -135,6 +137,10 @@ contract Mediators {
         mediationContract = _mediationContract;
     }
 
+    function setcMediationContract(address _cMediationContract) public onlyOwner {
+        cMediationContract = _cMediationContract;
+    }
+
     /**
      *
      * @dev Modifier function onlyOwner can call this
@@ -150,7 +156,7 @@ contract Mediators {
 
     // used so only the mediation contract calls this. 
     modifier onlyMediation() {
-        require(msg.sender == mediationContract, "Not the mediation contract.");
+        require(msg.sender == mediationContract || msg.sender == cMediationContract, "Permission Denied, nonMediationContact");
         _;
     }
 }
