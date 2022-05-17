@@ -89,10 +89,9 @@ contract Cmediation is VRFConsumerBaseV2, Ownable {
         expert
     }
 
-
     //Events
     event case_Created(
-        uint256 _caseId, 
+        uint256 caseId, 
         address firstParty,
         address secondParty,
         address mediator,
@@ -188,13 +187,12 @@ contract Cmediation is VRFConsumerBaseV2, Ownable {
 
     /*
     * The other party has to join the case before mediator will be able to start a session
-    * When joining, he has to specify the case that he is joining and pay the fee accordingly
+    * 
     */
-    function joinCaseAsSecondParty(uint256 _caseId) external payable payByCategory(cases[_caseId].category, numberOfSessions){
+    function joinCaseAsSecondParty(uint256 _caseId) external {
         if(!doesCaseExist[_caseId]) {
             revert Mediation__CaseDoesNotExistOrCaseIsClosed();
         }
-        ethBalances[_caseId] += msg.value;
         cases[_caseId].secondParty = payable(msg.sender);
         cases[_caseId].caseClosed = false;
 
@@ -484,18 +482,18 @@ contract Cmediation is VRFConsumerBaseV2, Ownable {
     /*
     * Parties involved use this to pay for a case with respect to the category
     */
-    // modifier payByCategory(uint256 category, uint256 _numberOfSessions) {
-    //     if(category == uint256(Category.junior)) {
-    //         require(msg.value == (juniorMediatorPrice/2)*_numberOfSessions, "Not enough or too much eth to create a case");
-    //     }
-    //     else if(category == uint256(Category.intermediate)){
-    //         require(msg.value == (intermediateMediatorPrice/2)*_numberOfSessions, "Not enough or too much eth to create a case");
-    //     }
-    //     else if(category == uint256(Category.expert)) {
-    //         require(msg.value == (expertMediatorPrice/2)*_numberOfSessions, "Not enough or too much eth to create a case");
-    //     }
-    //     _;
-    // }
+    modifier payByCategory(uint256 category, uint256 _numberOfSessions) {
+        if(category == uint256(Category.junior)) {
+            require(msg.value == (juniorMediatorPrice/2)*_numberOfSessions, "Not enough or too much eth to create a case");
+        }
+        else if(category == uint256(Category.intermediate)){
+            require(msg.value == (intermediateMediatorPrice/2)*_numberOfSessions, "Not enough or too much eth to create a case");
+        }
+        else if(category == uint256(Category.expert)) {
+            require(msg.value == (expertMediatorPrice/2)*_numberOfSessions, "Not enough or too much eth to create a case");
+        }
+        _;
+    }
 
     modifier payFullFeeByCategory(uint256 category, uint256 _numberOfSessions) {
         if(category == uint256(Category.junior)) {
