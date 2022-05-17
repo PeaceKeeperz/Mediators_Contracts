@@ -116,13 +116,16 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
     );
 
     event AssignMediator(uint256 _caseId, address _mediator);
+    event AssignPartyMembers(
+        uint256 sessionId,
+        uint8 partyNumber,
+        address[] partyMembers
+    );
+    event EndSession(uint256 caseId, uint256 sessionId);
 
     /** Custom Errors **/
-    error Mediation__PartyDoesNotExist();
     error Mediation__CaseDoesNotExistOrCaseIsClosed();
     error Mediation__OnlyMediatorCanDoThis();
-    error Mediation__SessionAlredyStarted();
-    error Mediation__ExceededDefaultNumberOfSessions();
     error Mediation__CannotReceivePaymentPartiesNeedToApprove();
     error Mediation__FailedToSendPayment();
     error Mediation__FailedToWithdrawFunds();
@@ -142,9 +145,27 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
     uint256 intermediateMediatorPrice = 0.002 ether;
     uint256 expertMediatorPrice = 0.003 ether;
 
+    constructor(uint64 subscriptionId, address _mediator)
+        VRFConsumerBaseV2(c_vrfCoordinator)
+    {
+        i_COORDINATOR = VRFCoordinatorV2Interface(c_vrfCoordinator);
+        i_subscriptionId = subscriptionId;
+        i_Mediator = IMediator(_mediator);
+    }
+
+
+    /***
+    * @notice create case - will create a mediation case to be filled with mediator and sessions
+    *
+    * @param _category uint256 category level number for type of mediator they want. lvl 1,2,3.
+    * @param _secondPartyMember address of the second party member for the case
+    * @param _sessionId  uint256 [] that should be empty. This is to add sessions to case later with create session function.
+    * @param numberOfSession number of session to use for payByCategory. 
+    ***/
     function createCase(
         uint256 _category,
-        uint256[] memory _sessionIds //call data??
+        address _secondPartyMember,
+        uint256[] memory _sessionIds
     ) external payable payByCategory(_category, numberOfSessions) {
         caseId++;
         ethBalances[caseId] += msg.value;
@@ -152,7 +173,7 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
         cases[caseId] = Case({
             caseId: caseId,
             firstParty: payable(msg.sender),
-            secondParty: payable(address(0)),
+            secondParty: payable(_secondPartyMember),
             mediator: payable(address(0)),
             tokenURI: "tokenuri",
             caseClosed: true,
@@ -272,7 +293,17 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
                 session.secondPartyMembers.push(_partyMembers[i]);
             }
         }
+
+        emit AssignPartyMembers(_sessionId, _partyNumber, _partyMembers);
     }
+
+    /**
+     * @notice endSession will change the session boolean sessionClosed to true.
+     * which will end the session.
+     * @param _caseId uint256 case id number.
+     * @param _sessionId uint256 session id number.
+     *
+     */
 
     function endSession(uint256 _caseId, uint256 _sessionId)
         public
@@ -284,7 +315,32 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
             Session storage session = sessions[caseId][sessionId];
             session.sessionClosed = true;
         }
+
+        emit EndSession(_caseId, _sessionId);
     }
+
+    //LETS DISCUSS MORE ON THIS FEATURE
+
+    /*
+    * Both parties involved, have to accept to pay the mediator before the mediator can get paid when he ends the session
+    */
+    function acceptPayment(uint256 _caseId) external {
+        if(cases[_caseId].firstParty == msg.sender) {
+            acceptedByFirstParty[_caseId] = 1;
+        }
+
+        if(cases[_caseId].secondParty == msg.sender){
+            acceptedBySecondparty[_caseId] = 1;
+        }
+
+        if((acceptedByFirstParty[_caseId] + acceptedBySecondparty[_caseId]) == 2){
+            paymentAccepted[_caseId] = true;
+        }else{
+            paymentAccepted[_caseId] = false;
+        }
+    }
+
+
 
     /*
      * A modifier to receive payment,
