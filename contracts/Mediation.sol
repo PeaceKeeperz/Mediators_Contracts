@@ -49,6 +49,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
     *  Number of default sessions that users have to pay upfront when creating a case,
     *  If they don't use the number of sessions, they will be refunded part of the funds
     */
+    
     uint256 constant numberOfSessions = 3; 
 
     struct BookedSession {
@@ -89,8 +90,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
         intermediate,
         expert
     }
-
-
+    
     //Events
     event case_Created(
         uint256 _caseId, 

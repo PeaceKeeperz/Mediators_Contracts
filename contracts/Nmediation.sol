@@ -22,7 +22,7 @@ interface IMediator {
 }
 
 contract Nmediation is VRFConsumerBaseV2, Ownable {
-    IMediator immutable i_Mediator;
+    IMediator immutable  i_Mediator;
     VRFCoordinatorV2Interface immutable i_COORDINATOR;
     //Rinkeby coordinator, These test values are coming from https://docs.chain.link/docs/vrf-contracts/#configurations
     address constant c_vrfCoordinator =
@@ -122,6 +122,7 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
         address[] partyMembers
     );
     event EndSession(uint256 caseId, uint256 sessionId);
+    event SecondPartyJoin(uint256 caseId, address secondParty);
 
     /** Custom Errors **/
     error Mediation__CaseDoesNotExistOrCaseIsClosed();
@@ -164,8 +165,7 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
     ***/
     function createCase(
         uint256 _category,
-        address _secondPartyMember,
-        uint256[] memory _sessionIds
+        uint256[] _sessionId,
     ) external payable payByCategory(_category, numberOfSessions) {
         caseId++;
         ethBalances[caseId] += msg.value;
@@ -173,13 +173,13 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
         cases[caseId] = Case({
             caseId: caseId,
             firstParty: payable(msg.sender),
-            secondParty: payable(_secondPartyMember),
+            secondParty: payable(address(0)),
             mediator: payable(address(0)),
             tokenURI: "tokenuri",
             caseClosed: true,
             caseCreatedAt: block.timestamp,
             numberOfSession: 0, //this would need to change
-            sessionIds: _sessionIds,
+            sessionIds: _sessionId,
             category: _category
         });
 
@@ -197,6 +197,21 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
             cases[caseId].sessionIds,
             cases[caseId].category
         );
+    }
+
+    /*
+    * The other party has to join the case before mediator will be able to start a session
+    * When joining, he has to specify the case that he is joining and pay the fee accordingly
+    */
+    function joinCaseAsSecondParty(uint256 _caseId) external payable payByCategory(cases[_caseId].category, numberOfSessions){
+        if(!doesCaseExist[_caseId]) {
+            revert Mediation__CaseDoesNotExistOrCaseIsClosed();
+        }
+        ethBalances[_caseId] += msg.value;
+        cases[_caseId].secondParty = payable(msg.sender);
+        cases[_caseId].caseClosed = false;
+
+        emit SecondPartyJoin(_caseId, msg.sender);
     }
 
     /*
@@ -293,7 +308,6 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
                 session.secondPartyMembers.push(_partyMembers[i]);
             }
         }
-
         emit AssignPartyMembers(_sessionId, _partyNumber, _partyMembers);
     }
 
