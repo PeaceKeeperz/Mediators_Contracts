@@ -80,7 +80,7 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
         bool caseClosed;
         uint256 caseCreatedAt;
         uint256 numberOfSession;
-        uint256[] sessionIds; // session id storage
+        uint256[] sessions; // session id storage
         uint256 category;
     }
 
@@ -105,7 +105,7 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
         bool caseClosed,
         uint256 caseCreatedAt,
         uint256 numberOfSession,
-        uint256[] sessionIds,
+        uint256[] sessions,
         uint256 category
     );
 
@@ -128,11 +128,13 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
     event EndSession(uint256 caseId, uint256 sessionId);
     event SecondPartyJoin(uint256 caseId, address secondParty);
 
+
     /** Custom Errors **/
     error Mediation__CaseDoesNotExistOrCaseIsClosed();
     error Mediation__OnlyMediatorCanDoThis();
     error Mediation__FailedToSendPayment();
     error Mediation_SessionDoesNotExist(); //new error
+    error Mediation__CannotReceivePaymentPartiesNeedToApprove();
 
     /*
      * WE MAY NEED CHAINLINK DATA FEED TO GET THE CURRENT PRICE OF ETH AND KNOW WHAT TO PRICE USERS
@@ -171,10 +173,10 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
             secondParty: payable(address(0)),
             mediator: payable(address(0)),
             tokenURI: "tokenuri",
-            caseClosed: true,
+            caseClosed: true, // why close?
             caseCreatedAt: block.timestamp,
             numberOfSession: 0, //this would need to change
-            sessionIds: _sessionId,
+            sessions: _sessionId,
             category: _category
         });
 
@@ -189,7 +191,7 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
             cases[caseId].caseClosed,
             cases[caseId].caseCreatedAt,
             cases[caseId].numberOfSession,
-            cases[caseId].sessionIds,
+            cases[caseId].sessions,
             cases[caseId].category
         );
     }
@@ -254,7 +256,8 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
             });
 
             Case storage myCase = cases[_caseId];
-            myCase.sessionIds.push(sessionId); //adds new session to session id array
+            myCase.sessions.push(sessionId); //adds new session to session id array
+            myCase.numberOfSession += 1; // increases the session number count
 
             doesSessionExist[sessionId] = true;
 
@@ -291,13 +294,12 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
         if (!doesSessionExist[_sessionId]) {
             revert Mediation_SessionDoesNotExist();
         }
+         Session storage session = sessions[caseId][sessionId];
         if (_partyNumber == 1) {
-            Session storage session = sessions[caseId][sessionId];
             for (uint8 i = 0; i < _partyMembers.length; i++) {
                 session.firstPartyMembers.push(_partyMembers[i]);
             }
         } else {
-            Session storage session = sessions[caseId][sessionId];
             for (uint8 i = 0; i < _partyMembers.length; i++) {
                 session.secondPartyMembers.push(_partyMembers[i]);
             }
@@ -332,7 +334,7 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
     /*
     * Both parties involved, have to accept to pay the mediator before the mediator can get paid when he ends the session
     */
-    function acceptPayment(uint256 _caseId) external {
+    function acceptPayment(uint256 _caseId) external onlyPartyMember(_caseId) {
         if(cases[_caseId].firstParty == msg.sender) {
             acceptedByFirstParty[_caseId] = 1;
         }
@@ -348,6 +350,13 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
         }
     }
 
+    /** NEED TO HAVE closeCase function implemented */
+    // function closeCase(uint256 _caseId) external onlyMediator(_caseId) receivePayment(_caseId) {
+    //     if(!paymentAccepted[_caseId]){
+    //         revert Mediation__CannotReceivePaymentPartiesNeedToApprove();
+    //     }
+
+    // }
 
 
     /*
@@ -440,6 +449,11 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
         if (msg.sender != cases[_caseId].mediator) {
             revert Mediation__OnlyMediatorCanDoThis();
         }
+        _;
+    }
+
+    modifier onlyPartyMember(uint256 _caseId) {
+        require(msg.sender == cases[_caseId].firstParty || msg.sender == cases[_caseId].secondParty, "You are not apart of this case");
         _;
     }
 
