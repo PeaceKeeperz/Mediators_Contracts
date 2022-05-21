@@ -131,16 +131,7 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
     /** Custom Errors **/
     error Mediation__CaseDoesNotExistOrCaseIsClosed();
     error Mediation__OnlyMediatorCanDoThis();
-    error Mediation__CannotReceivePaymentPartiesNeedToApprove();
     error Mediation__FailedToSendPayment();
-    error Mediation__FailedToWithdrawFunds();
-    error Mediation__NotEnoughFundsInContract();
-    error Mediation__YouAreNotPartOfThisSession();
-    error Mediation__BookedSessionAlreadyStarted();
-    error Mediation__BookedSessionIsStillclosed();
-    error Mediation__FailedToRefundFundsToParty1();
-    error Mediation__FailedToRefundFundsToParty2();
-
     error Mediation_SessionDoesNotExist(); //new error
 
     /*
@@ -169,7 +160,7 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
     ***/
     function createCase(
         uint256 _category,
-        uint256[] memory _sessionId,
+        uint256[] memory _sessionId
     ) external payable payByCategory(_category, numberOfSessions) {
         caseId++;
         ethBalances[caseId] += msg.value;
@@ -401,12 +392,12 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
 
     //Get random word.
     function _requestRandomWords() internal  {
-    uint256 requestId = COORDINATOR.requestRandomWords(
-        keyHash,
-        s_subscriptionId,
-        requestConfirmations,
-        callbackGasLimit,
-        numWords
+    uint256 requestId = i_COORDINATOR.requestRandomWords(
+        c_keyHash,
+        i_subscriptionId,
+        c_requestConfirmations,
+        c_callbackGasLimit,
+        c_numWords
     );
     requestCounter += 1;
     s_requestIdToRequestIndex[requestId] = requestCounter;
@@ -417,7 +408,7 @@ contract Nmediation is VRFConsumerBaseV2, Ownable {
         uint256 requestId,
         uint256[] memory randomWords
     ) internal override {
-        address[] memory mediators = i_mediator.getAllMediatorsByCategory( //will need to change the Category info.....
+        address[] memory mediators = i_Mediator.getAllMediatorsByCategory( //will need to change the Category info.....
                 1
             );
     uint256 requestNumber = s_requestIdToRequestIndex[requestId];
