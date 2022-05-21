@@ -23,6 +23,7 @@ contract Mediators {
     address[] private mediatorsAddresses;
     mapping(uint256 => bool) public isAvailable; // is the mediator available?
     mapping(uint256 => bool) public isActive;
+    
     event Mediator(
         uint256 id,
         address owner,
