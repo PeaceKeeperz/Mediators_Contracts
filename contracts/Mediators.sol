@@ -20,7 +20,7 @@ contract Mediators {
     address public cMediationContract;
 
     mapping(uint256 => _Mediator) public mediators;
-    mapping(uint256 => address[]) private mediatorsByCategory;
+    address[] private mediatorsAddresses;
     mapping(uint256 => bool) public isAvailable; // is the mediator available?
     mapping(uint256 => bool) public isActive;
     event Mediator(
@@ -31,8 +31,7 @@ contract Mediators {
         string language,
         string certification,
         bool daoExperience,
-        uint256 timestamp,
-        uint256 category
+        uint256 timestamp
     );
 
 
@@ -47,7 +46,6 @@ contract Mediators {
         string certifications;
         bool daoExperience;
         uint256 timestamp;
-        uint256 category;
     }
 
     /* ============ Constructor ============ */
@@ -64,15 +62,13 @@ contract Mediators {
      * @param _languages langugages they speak?
      * @param _certifications any certifications?
      * @param _daoExperience any dao eperience?
-     * @param _category The category of the mediator
      */
     function createMediator(
         address _owner,
         string memory _timeZone,
         string memory _languages,
         string memory _certifications,
-        bool _daoExperience,
-        uint256 _category
+        bool _daoExperience
     ) public onlyOwner {
         //onlyOwner implementation from another contract.
         //require controller contract to be msg.sender.
@@ -85,12 +81,11 @@ contract Mediators {
             _languages,
             _certifications,
             _daoExperience,
-            block.timestamp,
-            _category
+            block.timestamp
         );
         isAvailable[nextMediatorId] = true;
         isActive[nextMediatorId] = true;
-        _updateMediatorByCategory(_category, mediators[nextMediatorId]);
+        _updateMediator(mediators[nextMediatorId]);
         //mint mediator NFT badge? send
         emit Mediator(
             nextMediatorId,
@@ -100,8 +95,7 @@ contract Mediators {
             _languages,
             _certifications,
             _daoExperience,
-            block.timestamp,
-            _category
+            block.timestamp
         );
     }
 
@@ -118,19 +112,18 @@ contract Mediators {
         return true;
     }
 
-    function _updateMediatorByCategory(
-        uint256 _category,
+    function _updateMediator(
         _Mediator memory mediator
     ) private onlyOwner {
-        mediatorsByCategory[_category].push(mediator.owner);
+        mediatorsAddresses.push(mediator.owner);
     }
 
-    function getAllMediatorsByCategory(uint256 _category)
+    function getAllMediators()
         external
         view
         returns (address[] memory)
     {
-        return mediatorsByCategory[_category];
+        return mediatorsAddresses;
     }
 
     function setMediationContract(address _mediationContract) public onlyOwner {
