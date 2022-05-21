@@ -28,8 +28,8 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
     uint32 constant c_callbackGasLimit = 100000;    
     uint16 constant c_requestConfirmations = 3;
     uint32 constant c_numWords =  1;
-    uint256[] public s_randomWords;
-    uint256 public requestId;
+    uint256 public requestCounter;
+
 
     struct Case {
         uint256 caseId;
@@ -84,6 +84,12 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
     mapping(uint256 => uint256) private acceptedByFirstParty; //The number of party one members who accepted to pay for a particular case session
     mapping(uint256 => uint256) private acceptedBySecondparty; //The number of party two members who accepted to pay for a particular case session
     mapping(uint256 => bool) private doesCaseExist;
+
+
+    mapping(uint256 => uint256) s_requestIdToRequestIndex; //used for 
+    mapping(uint256 => uint256) public s_requestIndexToRandomWords; //mapping of caseID to associated random number that was generated
+
+
 
     enum Category {
         junior,
@@ -196,6 +202,9 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
             });
 
             doesCaseExist[nextCaseId] = true;
+             _requestRandomWords(); //random number
+
+
             emit case_Created(
             nextCaseId,
             cases[nextCaseId].firstParty,
@@ -214,10 +223,14 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
     * The selected mediator is then added to the case
     */
     function assignMediator(uint _category, uint256 _caseId) external {
-        _requestRandomWords();
-        address[] memory mediators = i_Mediator.getAllMediatorsByCategory(_category);
-        uint256 selectedMediatorIndex = s_randomWords[0] % mediators.length;
-        require(i_Mediator.addCaseCount(selectedMediatorIndex), "error updating caseCount");
+        address[] memory mediators = i_Mediator.getAllMediatorsByCategory(
+            _category
+        );
+        uint256 selectedMediatorIndex = s_requestIndexToRandomWords[_caseId];
+        require(
+            i_Mediator.addCaseCount(selectedMediatorIndex),
+            "error updating caseCount"
+        );
         address selectedMediator = mediators[selectedMediatorIndex];
         cases[_caseId].mediator = payable(selectedMediator);
         emit AssignMediator(_caseId, selectedMediator);
@@ -484,24 +497,32 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
         }
     }
 
+
     //Get random word.
-    function _requestRandomWords() internal {
-        // Will revert if subscription is not set and funded.
-        requestId = i_COORDINATOR.requestRandomWords(
+    function _requestRandomWords() internal  {
+    uint256 requestId = i_COORDINATOR.requestRandomWords(
         c_keyHash,
         i_subscriptionId,
         c_requestConfirmations,
         c_callbackGasLimit,
         c_numWords
-        );
+    );
+    requestCounter += 1;
+    s_requestIdToRequestIndex[requestId] = requestCounter;
+
     }
-    
+
     function fulfillRandomWords(
-        uint256, /* requestId */
+        uint256 requestId,
         uint256[] memory randomWords
     ) internal override {
-        s_randomWords.push(randomWords[0]);
+        address[] memory mediators = i_Mediator.getAllMediatorsByCategory( //will need to change the Category info.....
+                1
+            );
+    uint256 requestNumber = s_requestIdToRequestIndex[requestId];
+    s_requestIndexToRandomWords[requestNumber] = (randomWords[0] % mediators.length) + 1;
     }
+
 
     /*
     * A modifier to receive payment, 
