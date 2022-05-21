@@ -151,6 +151,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
     function createCase(uint256 _category) external payable payByCategory(_category, numberOfSessions){
         ethBalances[nextCaseId] += msg.value;
         nextCaseId++;
+        _requestRandomWords();
         
         cases[nextCaseId] = Case({
             caseId: nextCaseId,
