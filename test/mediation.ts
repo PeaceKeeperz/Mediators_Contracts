@@ -33,27 +33,27 @@ describe("Integration Test for Mediator and Mediation contracts", () => {
       const cert = "Masters";
       await mediator
         .connect(accounts[0])
-        .createMediator(accounts[1].address, "GMT + 1", lan, cert, true, 0);
+        .createMediator(accounts[1].address, "GMT + 1", lan, cert, true);
       expect(await mediator.isAvailable(1)).to.equal(true);
     });
 
-    it("should get mediators by category", async () => {
+    it("should get mediators", async () => {
       const lan = "en";
       const cert = "Masters";
       await mediator
         .connect(accounts[0])
-        .createMediator(accounts[2].address, "GMT + 1", lan, cert, true, 0);
+        .createMediator(accounts[2].address, "GMT + 1", lan, cert, true);
       await mediator
         .connect(accounts[0])
-        .createMediator(accounts[3].address, "GMT + 1", lan, cert, true, 0);
-      const addresses = await mediator.getAllMediatorsByCategory(0);
+        .createMediator(accounts[3].address, "GMT + 1", lan, cert, true);
+      const addresses = await mediator.getAllMediators();
       expect(addresses.length).to.equal(3);
     });
   });
 
   describe("Mediation unit test", () => {
     it("Party one should create a medation", async () => {
-      await mediation.connect(accounts[4]).createCase(0, {
+      await mediation.connect(accounts[4]).createCase({
         value: ethers.utils.parseEther("0.0015"),
       });
       const _case = await mediation.cases(1);
@@ -108,8 +108,8 @@ describe("Integration Test for Mediator and Mediation contracts", () => {
     it("Should create case for the two parties", async () => {
       await mediation
         .connect(accounts[9])
-        .companyCreateCase(1, accounts[1].address, accounts[2].address, {
-          value: ethers.utils.parseEther("0.006"),
+        .companyCreateCase(accounts[1].address, accounts[2].address, {
+          value: ethers.utils.parseEther("0.002"),
         });
       const _case = await mediation.cases(2);
       await expect(_case.caseClosed).is.equal(false);

@@ -23,7 +23,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
     //Rinkeby coordinator, These test values are coming from https://docs.chain.link/docs/vrf-contracts/#configurations
     address constant c_vrfCoordinator = 0x6168499c0cFfCaCD319c818142124B7A15E857ab;
     //subscription id, gotten from when you subscribe for LINK
-    uint64 immutable i_subscriptionId;  //Subscription ID 4079
+    uint64 immutable i_subscriptionId;  //Subscription ID 4857
     bytes32 constant c_keyHash = 0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc;
     uint32 constant c_callbackGasLimit = 100000;    
     uint16 constant c_requestConfirmations = 3;

@@ -1,7 +1,8 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable spaced-comment */
 /* eslint-disable prettier/prettier */
 import { ethers, run } from "hardhat";
-import { Contract, ContractFactory, BigNumber } from "ethers";
+import { Contract, ContractFactory } from "ethers";
 import { expect, assert } from "chai";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
@@ -44,7 +45,6 @@ describe("Mediators Contract", () => {
         const languages: string = "English";
         const certification: string = "Some Cert";
         const daoExperience: boolean = true;
-        const category: number = 2;
 
         const createMediator = await mediators
           .connect(owner)
@@ -53,8 +53,7 @@ describe("Mediators Contract", () => {
             timezone,
             languages,
             certification,
-            daoExperience,
-            category
+            daoExperience
           );
         const txReceipt = await createMediator.wait();
         const newMediator = await mediators.mediators(1);
@@ -91,11 +90,6 @@ describe("Mediators Contract", () => {
           txReceipt.events[0].args.timestamp.toString(),
           "should have the right timestamp"
         );
-        assert.equal(
-          newMediator.category,
-          2,
-          "Should return the same category number of 2"
-        );
       });
 
       it("Should emit correct Mediator Event", async () => {
@@ -104,7 +98,6 @@ describe("Mediators Contract", () => {
         const languages: string = "English";
         const certification: string = "Some Cert";
         const daoExperience: boolean = true;
-        const category: number = 2;
 
         const createMediator = await mediators
           .connect(owner)
@@ -113,8 +106,7 @@ describe("Mediators Contract", () => {
             timezone,
             languages,
             certification,
-            daoExperience,
-            category
+            daoExperience
           );
 
         const txReceipt = await createMediator.wait();
@@ -129,8 +121,7 @@ describe("Mediators Contract", () => {
             "English",
             "Some Cert",
             true,
-            txReceipt.events[0].args.timestamp.toString(),
-            2
+            txReceipt.events[0].args.timestamp.toString()
           );
       });
 
@@ -140,7 +131,6 @@ describe("Mediators Contract", () => {
         const languages: string = "English";
         const certification: string = "Some Cert";
         const daoExperience: boolean = true;
-        const category: number = 2;
 
         const createMediator = await mediators
           .connect(owner)
@@ -149,8 +139,7 @@ describe("Mediators Contract", () => {
             timezone,
             languages,
             certification,
-            daoExperience,
-            category
+            daoExperience
           );
 
         const isAvailable: boolean = await mediators.isAvailable(1);
@@ -163,7 +152,6 @@ describe("Mediators Contract", () => {
         const languages: string = "English";
         const certification: string = "Some Cert";
         const daoExperience: boolean = true;
-        const category: number = 2;
 
         const createMediator = await mediators
           .connect(owner)
@@ -172,8 +160,7 @@ describe("Mediators Contract", () => {
             timezone,
             languages,
             certification,
-            daoExperience,
-            category
+            daoExperience
           );
 
         const isAvailable: boolean = await mediators.isActive(1);
@@ -186,7 +173,6 @@ describe("Mediators Contract", () => {
         const languages: string = "English";
         const certification: string = "Some Cert";
         const daoExperience: boolean = true;
-        const category: number = 2;
 
         await mediators
           .connect(owner)
@@ -195,21 +181,19 @@ describe("Mediators Contract", () => {
             timezone,
             languages,
             certification,
-            daoExperience,
-            category
+            daoExperience
           );
 
         const nextMediatorId = await mediators.nextMediatorId();
         assert.equal(nextMediatorId, 1, "Should equal 1");
       });
 
-      it("Should updateMediatorByCategory", async () => {
+      it("Should updateMediator", async () => {
         const owner: SignerWithAddress = accounts[0];
         const timezone: string = "PST";
         const languages: string = "English";
         const certification: string = "Some Cert";
         const daoExperience: boolean = true;
-        const category: number = 2;
 
         await mediators
           .connect(owner)
@@ -218,13 +202,12 @@ describe("Mediators Contract", () => {
             timezone,
             languages,
             certification,
-            daoExperience,
-            category
+            daoExperience
           );
 
         const category2Address = await mediators
           .connect(owner)
-          .getAllMediatorsByCategory(category);
+          .getAllMediators();
         assert.equal(category2Address[0], owner.address);
       });
 
@@ -234,7 +217,6 @@ describe("Mediators Contract", () => {
         const languages: string = "English";
         const certification: string = "Some Cert";
         const daoExperience: boolean = true;
-        const category: number = 2;
         await expect(
           mediators
             .connect(account1)
@@ -243,8 +225,7 @@ describe("Mediators Contract", () => {
               timezone,
               languages,
               certification,
-              daoExperience,
-              category
+              daoExperience
             )
         ).to.be.revertedWith(
           "You do not have permission to call this contract"
