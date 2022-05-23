@@ -491,7 +491,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
     ) internal override {
         address[] memory mediators = i_Mediator.getAllMediators();
     uint256 requestNumber = s_requestIdToRequestIndex[requestId];
-    s_requestIndexToRandomWords[requestNumber] = (randomWords[0] % mediators.length) + 1;
+    s_requestIndexToRandomWords[requestNumber] = (randomWords[0] % mediators.length);
     }
 
 
