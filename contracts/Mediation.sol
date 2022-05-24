@@ -332,6 +332,7 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
     */
     function endSessionWithoutPay(uint256 _caseId) external onlyMediator(_caseId) {
         cases[_caseId].sessionStarted = false;
+        cases[_caseId].numberOfSession -= 1;
     }
 
     /*
@@ -377,6 +378,30 @@ contract Mediation is VRFConsumerBaseV2, Ownable {
         bookedSessions[_caseId].bookedSessionClosed = false;
 
         emit JoinedBookedSession(_caseId);
+    }
+
+    function companyCreateBookedSession(uint256 _caseId) 
+        external payable payFullFeeForDefaultNumSession(1){
+            ethBalances[_caseId] = 0;
+            ethBalances[_caseId] += msg.value;
+            
+            bookedSessions[_caseId] = BookedSession(
+                _caseId,
+                cases[_caseId].firstParty,
+                cases[_caseId].secondParty,
+                cases[_caseId].mediator,
+                firstPartyMembers[_caseId],
+                secondPartyMembers[_caseId],
+                false, //bookedSessionClosed : False because all the two parties are already available for mediator to start a session
+                false,
+                block.timestamp
+                );
+
+            paymentAccepted[_caseId] = false;
+            acceptedByFirstParty[_caseId] = 0;
+            acceptedBySecondparty[_caseId] = 0;
+
+            emit BookedSessionCreated(_caseId);
     }
 
     /*
