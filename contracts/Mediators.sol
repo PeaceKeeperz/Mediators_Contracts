@@ -3,19 +3,20 @@ pragma solidity 0.8.7;
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "hardhat/console.sol"; //testing purposes
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 /**
  * @title Mediator
  *
  * @notice contract creates and stores mediator information.
  */
 
-contract Mediators {
+contract Mediators is Ownable {
     using SafeMath for uint256;
 
     /* ============ State Variables ============ */
 
     uint256 public nextMediatorId;
-    address public owner;
     address public mediationContract;
     address public cMediationContract;
 
@@ -47,12 +48,6 @@ contract Mediators {
         string certifications;
         bool daoExperience;
         uint256 timestamp;
-    }
-
-    /* ============ Constructor ============ */
-
-    constructor() {
-        owner = msg.sender;
     }
 
     /**
@@ -133,19 +128,6 @@ contract Mediators {
 
     function setcMediationContract(address _cMediationContract) public onlyOwner {
         cMediationContract = _cMediationContract;
-    }
-
-    /**
-     *
-     * @dev Modifier function onlyOwner can call this
-     *
-     **/
-    modifier onlyOwner() {
-        require(
-            msg.sender == owner,
-            "You do not have permission to call this contract"
-        );
-        _;
     }
 
     // used so only the mediation contract calls this. 
