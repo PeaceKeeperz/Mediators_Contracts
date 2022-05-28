@@ -7,7 +7,7 @@ const main = async () => {
   const Mediation = await ethers.getContractFactory("Mediation");
   const mediation = await Mediation.deploy(
     4857,
-    "0xf63158EC0AE9Ae232C54350EcCF2C5C5FC194470"
+    "0x30089064d80BF0c08834813e8Fe4c6Abc9ca8D1D"
   );
   await mediation.deployed();
 
@@ -17,7 +17,7 @@ const main = async () => {
 
   await hre.run("verify:verify", {
     address: mediation.address,
-    constructorArguments: [4857, "0xf63158EC0AE9Ae232C54350EcCF2C5C5FC194470"],
+    constructorArguments: [4857, "0x30089064d80BF0c08834813e8Fe4c6Abc9ca8D1D"],
   });
 };
 
